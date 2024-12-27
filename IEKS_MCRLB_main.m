@@ -89,7 +89,7 @@ x0 = mvnrnd(x0_mean,P0)';
 
 % determine the pseudotrue state sequence
 
-[pseudotrue_estimated_states,pseudotrue_estimated_covariances] = IEKS(true_measurements_in_polar,A,B,Q,h,R,simulation_length,x0,P0,0);
+[pseudotrue_estimated_states,pseudotrue_estimated_covariances] = IEKS(true_measurements_in_polar,A,B,Q,h,R,simulation_length,x0,P0,0,apply_numerical_derivative,dh_dx);
 
 MCRLB = calculate_MCRLB(pseudotrue_estimated_states,f,f1,f2,f3,f4,h,h1,h2,Q,R,Rbar,true_measurements_in_polar,simulation_length,state_dimension,x0,P0,df_dx,dh_dx,d2f_dx2,d2h1_dx2,d2h2_dx2,apply_numerical_derivative,apply_tridiagonal_method);
 
@@ -117,7 +117,7 @@ for i = 1:Nmc
     for k = (t+1)
         noisy_measurements(:,k) = generate_measurements(true_measurements_in_polar(:,k),[0;0],Rbar);
     end
-    [estimated_states,estimated_covariances] = IEKS(noisy_measurements,A,B,Q,h,R,simulation_length,x0,P0,i);
+    [estimated_states,estimated_covariances] = IEKS(noisy_measurements,A,B,Q,h,R,simulation_length,x0,P0,i,apply_numerical_derivative,dh_dx);
     % (t+1) = 1 to 151, indexing in matlab starts from 1
     for k = (t+1)
         MSE{k} = MSE{k} + (estimated_states(:,k) - true_states(:,k))*(estimated_states(:,k) - true_states(:,k))';

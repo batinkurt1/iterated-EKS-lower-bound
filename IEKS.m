@@ -1,4 +1,4 @@
-function [smoothed_states,smoothed_covariances] = IEKS(measurements,A,B,Q,h,R,simulation_length,x0,P0,MC_number)
+function [smoothed_states,smoothed_covariances] = IEKS(measurements,A,B,Q,h,R,simulation_length,x0,P0,MC_number,apply_numerical_derivative,dh_dx)
 
     estimated_states = zeros(4,simulation_length);
     estimated_covariances = cell(1,simulation_length);
@@ -20,12 +20,12 @@ function [smoothed_states,smoothed_covariances] = IEKS(measurements,A,B,Q,h,R,si
             [predicted_state,predicted_covariance,predicted_measurement] = EKF_prediction_update(estimated_states(:,k-1),estimated_covariances{k-1},A,B,h,Q);
         end
         actual_measurement = measurements(:,k);
-        [estimated_state,estimated_covariance] = EKF_measurement_update(predicted_state,predicted_covariance,predicted_measurement,actual_measurement,h,R);
+        [estimated_state,estimated_covariance] = EKF_measurement_update(predicted_state,predicted_covariance,predicted_measurement,actual_measurement,h,R,apply_numerical_derivative,dh_dx);
         estimated_states(:,k) = estimated_state;
         estimated_covariances{k} = estimated_covariance;
     end
     
-    while state_diff > 1e-3
+    while state_diff > 1e-12
         previous_states = estimated_states;
         
         % N given N is known
@@ -52,7 +52,7 @@ function [smoothed_states,smoothed_covariances] = IEKS(measurements,A,B,Q,h,R,si
             end
             actual_measurement = measurements(:,k);
             % the jacobian location is taken from smoothed states.
-            [estimated_state,estimated_covariance] = IEKF_measurement_update(predicted_state,predicted_covariance,predicted_measurement,actual_measurement,h,R,smoothed_states(:,k));
+            [estimated_state,estimated_covariance] = IEKF_measurement_update(predicted_state,predicted_covariance,predicted_measurement,actual_measurement,h,R,smoothed_states(:,k),apply_numerical_derivative,dh_dx);
             estimated_states(:,k) = estimated_state;
             estimated_covariances{k} = estimated_covariance;
         end
