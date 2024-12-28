@@ -3,7 +3,7 @@ close all;
 
 plot_open = 0;
 
-Nmc = 30000;
+Nmc = 100000;
 apply_numerical_derivative = 0; % 0 for analytical, 1 for numerical d_dx
 apply_tridiagonal_method   = 0; % 0 for built-in inverse, 1 for tridiagonal method
  
@@ -38,7 +38,7 @@ end
 
 A = [eye(2),T*eye(2);zeros(2),eye(2)];
 B = eye(4);
-Q = 10*diag([10,10,1,1]);
+Q = 100*diag([10,10,1,1]);
 
 f = @(x)(A*x);
 
@@ -85,7 +85,7 @@ azimuth_true = true_measurements_in_polar(2,:);
 
 x0_mean = [1000; 1000; 0; 0];
 P0 = diag([100^2, 100^2, 10^2, 10^2]);
-x0 = mvnrnd(x0_mean,P0)';
+x0 = x0_mean;
 
 % determine the pseudotrue state sequence
 
@@ -113,14 +113,14 @@ end
 
 for i = 1:Nmc
     % generate noisy measurements
-    noisy_measurements = zeros(2,simulation_length);
-    for k = (t+1)
-        noisy_measurements(:,k) = generate_measurements(true_measurements_in_polar(:,k),[0;0],Rbar);
-    end
+    noisy_measurements = generate_measurements(true_measurements_in_polar,[0;0],Rbar);
+    
     [estimated_states,estimated_covariances] = IEKS(noisy_measurements,A,B,Q,h,R,simulation_length,x0,P0,i,apply_numerical_derivative,dh_dx);
     % (t+1) = 1 to 151, indexing in matlab starts from 1
+    
+    difference=estimated_states - true_states;
     for k = (t+1)
-        MSE{k} = MSE{k} + (estimated_states(:,k) - true_states(:,k))*(estimated_states(:,k) - true_states(:,k))';
+        MSE{k} = MSE{k} + difference(:,k)*difference(:,k)';
     end
     
 end
@@ -132,6 +132,12 @@ end
 
 LB_x = zeros(1,simulation_length);
 MSE_x = zeros(1,simulation_length);
+LB_y = zeros(1,simulation_length);
+MSE_y = zeros(1,simulation_length);
+LB_vx = zeros(1,simulation_length);
+MSE_vx = zeros(1,simulation_length);
+LB_vy = zeros(1,simulation_length);
+MSE_vy = zeros(1,simulation_length);
 
 for k= 1:simulation_length
     current_LB = LB{k};
@@ -139,6 +145,15 @@ for k= 1:simulation_length
 
     LB_x(k) = sqrt(current_LB(1,1));
     MSE_x(k) = sqrt(current_MSE(1,1));
+
+    LB_y(k) = sqrt(current_LB(2,2));
+    MSE_y(k) = sqrt(current_MSE(2,2));    
+
+    LB_vx(k) = sqrt(current_LB(3,3));
+    MSE_vx(k) = sqrt(current_MSE(3,3));
+
+    LB_vy(k) = sqrt(current_LB(4,4));
+    MSE_vy(k) = sqrt(current_MSE(4,4));       
 end
 
 if plot_open
@@ -166,3 +181,20 @@ hold on;
 plot(MSE_x);
 legend('LB_x','MSE_x');
 
+figure;
+plot(LB_y);
+hold on;
+plot(MSE_y);
+legend('LB_y','MSE_y');
+
+figure;
+plot(LB_vx);
+hold on;
+plot(MSE_vx);
+legend('LB_vx','MSE_vx');
+
+figure;
+plot(LB_vy);
+hold on;
+plot(MSE_vy);
+legend('LB_vy','MSE_vy');
